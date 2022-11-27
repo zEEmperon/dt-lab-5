@@ -83,13 +83,23 @@ def get_beta_coefs(df: pd.DataFrame) -> np.array:
     return beta_coefs
 
 
-def get_generalized_R(df: pd.DataFrame) -> list:
+def get_R_and_phi(df: pd.DataFrame) -> list:
+    df_without_class_attr = get_df_without_class_attr(df)
     instances_combinations = get_instances_combinations(df.index)
-    res = []
+
+    get_Q = lambda class_value: 1 if class_value == 1 else -1
+
+    alpha = 4
+    beta = 3
+    res_arr = []
+
     for comb in instances_combinations:
-        general_R = math.sqrt(sum((df.loc[comb[0]] - df.loc[comb[1]]) ** 2))
-        res.append([comb[0], comb[1], general_R])
-    return res
+        first_index, second_index = comb
+        R = math.sqrt(sum((df_without_class_attr.loc[first_index] - df_without_class_attr.loc[second_index]) ** 2))
+        Q = get_Q(df.loc[second_index]['Class'])
+        phi = Q / 1 - alpha * R ** beta
+        res_arr.append([first_index, second_index, R, phi])
+    return res_arr
 
 
 def main():
@@ -109,16 +119,16 @@ def main():
     d_x_for_training_set = get_D_x_for_all_x(training_df_without_class_attr, m_x_for_training_set)
     normed_x_training_set = get_normed_x(training_df_without_class_attr, d_x_for_training_set)
 
-    # Узагальнена відстань для і-ого і j-ого екземплярів
+    # Узагальнена відстань та потенціал для і-ого і j-ого екземплярів
     # 276 для навчальної вибірки
-    label = "Узагальнена відстань для і-ого і j-ого екземплярів"
-    generalized_R_for_training_set = get_generalized_R(training_df_without_class_attr)
+    label = "Узагальнена відстань та потенціал для і-ого і j-ого екземплярів"
+    R_and_phi_for_training_set = get_R_and_phi(training_df)
 
-    table_data = [*map(lambda results: [results[0] + 1, results[1] + 1, results[2]], generalized_R_for_training_set)]
-    col_names = ["Номер i-го примірника", "Номер j-го примірника", "Узагальнена відстань"]
+    table_data = [*map(lambda results: [results[0] + 1, results[1] + 1, results[2], results[3]], R_and_phi_for_training_set)]
+    col_names = ["Номер i-го примірника", "Номер j-го примірника", "Узагальнена відстань (R)", "Потенціал (phi)"]
 
     print()
-    print_task(3.5)
+    print_task("3.5 і 3.6")
     print(label)
     print(tabulate(table_data, headers=col_names, tablefmt="fancy_grid"))
 

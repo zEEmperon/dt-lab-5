@@ -1,10 +1,13 @@
 import math
-from typing import Tuple, Any
-
 import pandas as pd
 import numpy as np
 from tabulate import tabulate
 from itertools import combinations
+
+K1 = 'K1'
+K2 = 'K2'
+alpha = 4
+beta = 3
 
 
 def load_csv(filename):
@@ -89,8 +92,6 @@ def get_R_and_phi(df: pd.DataFrame) -> list:
 
     get_Q = lambda class_value: 1 if class_value == 1 else -1
 
-    alpha = 4
-    beta = 3
     res_arr = []
 
     for comb in instances_combinations:
@@ -103,7 +104,7 @@ def get_R_and_phi(df: pd.DataFrame) -> list:
 
 
 def classify(df: pd.DataFrame, threshold_phi: int, phi_list: list) -> list:
-    get_class = lambda y: 'K1' if y == 1 else 'K2'
+    get_class = lambda y: K1 if y == 1 else K2
 
     n_K1 = len(get_K1(df))
     n_K2 = len(get_K2(df))
@@ -126,7 +127,7 @@ def classify(df: pd.DataFrame, threshold_phi: int, phi_list: list) -> list:
                 k2_phi += n_phi
 
         total_potential = (1 / n_K1) * k1_phi + (1 / (n_K2 - 1)) * k2_phi
-        predicted_class = 'K1' if total_potential >= threshold_phi else 'K2'
+        predicted_class = K1 if total_potential >= threshold_phi else K2
 
         res.append([i, total_potential, predicted_class, actual_class])
 
@@ -134,11 +135,25 @@ def classify(df: pd.DataFrame, threshold_phi: int, phi_list: list) -> list:
 
 
 def get_stats(classified: list) -> list:
-    return []
+    classified = np.array(classified)
+    n = len(classified)
+    real_K1_n = len(classified[classified[:, 3] == K1])
+    real_K2_n = len(classified[classified[:, 3] == K2])
+    predicted_K1_n = len(classified[classified[:, 2] == K1])
+    predicted_K2_n = len(classified[classified[:, 2] == K2])
+    misclassified = len(classified[classified[:, 2] != classified[:, 3]])
+    return [n, real_K1_n, real_K2_n, predicted_K1_n, predicted_K2_n, misclassified]
 
 
-def print_stats(classified: list) -> None:
-    pass
+def print_stats(stats: list) -> None:
+    n, real_K1_n, real_K2_n, predicted_K1_n, predicted_K2_n, misclassified = stats
+    print("Всього примірників:", n)
+    print("Фактично приналежних до К1 =", real_K1_n)
+    print("Фактично приналежних до К2 =", real_K2_n)
+    print("Прогнозовано приналежних до К1 =", predicted_K1_n)
+    print("Прогнозовано приналежних до К2 =", predicted_K2_n)
+    print("Неправильно класифікованих =", misclassified)
+    print("Відносна помилка = {}%".format(round(misclassified / n, 3) * 100))
 
 
 def main():
@@ -156,14 +171,17 @@ def main():
     # Нормовані значення ознак
     m_x_for_training_set = get_M_x_for_all_x(training_df_without_class_attr)
     d_x_for_training_set = get_D_x_for_all_x(training_df_without_class_attr, m_x_for_training_set)
-    normed_x_training_set = get_normed_x(training_df_without_class_attr, d_x_for_training_set)
+
+    normed_training_df = get_normed_x(training_df_without_class_attr, d_x_for_training_set)
+    normed_training_df['Class'] = training_df['Class']
 
     # Узагальнена відстань та потенціал для і-ого і j-ого екземплярів
     # 276 для навчальної вибірки
     label = "Узагальнена відстань та потенціал для і-ого і j-ого екземплярів"
-    R_and_phi_for_training_set = get_R_and_phi(training_df)
+    R_and_phi_for_training_set = get_R_and_phi(normed_training_df)
 
-    table_data = [*map(lambda results: [results[0] + 1, results[1] + 1, results[2], results[3]], R_and_phi_for_training_set)]
+    table_data = [
+        *map(lambda results: [results[0] + 1, results[1] + 1, results[2], results[3]], R_and_phi_for_training_set)]
     col_names = ["Номер i-го примірника", "Номер j-го примірника", "Узагальнена відстань (R)", "Потенціал (phi)"]
 
     print()
@@ -172,14 +190,22 @@ def main():
     print(tabulate(table_data, headers=col_names, tablefmt="fancy_grid"))
 
     # classify
-    threshold_phi = 34
+    threshold_phi = 15
+
     phi_for_training_set = [*map(lambda i: [i[0], i[1], i[2]], R_and_phi_for_training_set)]
+    training_set_classification_res = classify(normed_training_df, threshold_phi, phi_for_training_set)
+    training_set_classification_stats = get_stats(training_set_classification_res)
 
     col_names = ['Номер примірника', 'Сумарний потенціал', 'Прогн. клас', 'Справжній клас']
-    table_data = classify(training_df, threshold_phi, phi_for_training_set)
+    table_data = training_set_classification_res
 
     print()
     print(tabulate(table_data, headers=col_names, tablefmt="fancy_grid"))
+
+    print()
+    print("Результати класифікації для навчальної вибірки:")
+    print()
+    print_stats(training_set_classification_stats)
 
 
 if __name__ == '__main__':

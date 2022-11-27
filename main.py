@@ -62,30 +62,6 @@ def get_instances_combinations(list_with_indexes: list) -> list:
     return [*combinations(list_with_indexes, 2)]
 
 
-def get_beta_coefs(df: pd.DataFrame) -> np.array:
-    df_K1 = get_K1(df)
-    df_K2 = get_K2(df)
-
-    df_K1_without_class_attr = get_df_without_class_attr(df_K1)
-    df_K2_without_class_attr = get_df_without_class_attr(df_K2)
-
-    K1_m = df_K1_without_class_attr.mean()
-    K2_m = df_K2_without_class_attr.mean()
-
-    Sk1 = df_K1_without_class_attr.cov()
-    Sk2 = df_K2_without_class_attr.cov()
-
-    n1 = len(df_K1)
-    n2 = len(df_K2)
-    Sk = 1 / (n1 + n2 - 2) * (n1 * Sk1 + n2 * Sk2)
-
-    inv_Sk = pd.DataFrame(np.linalg.inv(Sk.values), Sk.columns, Sk.index)
-    beta_coefs = inv_Sk * (K1_m - K2_m)
-    beta_coefs = np.diagonal(beta_coefs)
-
-    return beta_coefs
-
-
 def get_R_and_phi(df: pd.DataFrame) -> list:
     df_without_class_attr = get_df_without_class_attr(df)
     instances_combinations = get_instances_combinations(df.index)
@@ -165,8 +141,6 @@ def main():
 
     training_df_without_class_attr = get_df_without_class_attr(training_df)
     test_df_without_class_attr = get_df_without_class_attr(test_df)
-
-    beta_coefs = get_beta_coefs(training_df)
 
     # Нормовані значення ознак
     m_x_for_training_set = get_M_x_for_all_x(training_df_without_class_attr)

@@ -6,8 +6,8 @@ from itertools import combinations
 
 K1 = 'K1'
 K2 = 'K2'
-alpha = 4
-beta = 3
+alpha = 5
+beta = 4
 
 
 def load_csv(filename):
@@ -129,18 +129,21 @@ def print_stats(stats: list) -> None:
     print("Прогнозовано приналежних до К1 =", predicted_K1_n)
     print("Прогнозовано приналежних до К2 =", predicted_K2_n)
     print("Неправильно класифікованих =", misclassified)
-    print("Відносна помилка = {}%".format(round(misclassified / n, 3) * 100))
+    print("Відносна помилка = {}%".format(round((misclassified / n) * 100, 3)))
+
+
+def print_stats_probabilities(stats: list) -> None:
+    n, real_K1_n, real_K2_n, predicted_K1_n, predicted_K2_n, misclassified = stats
+    print("P(K1) =", real_K1_n / n)
+    print("P(K2) =", real_K2_n / n)
+    print("P(ріш K1) =", predicted_K1_n / n)
+    print("P(ріш K2) =", predicted_K2_n / n)
 
 
 def main():
     training_set_filename = "training_set.csv"
-    test_set_filename = "test_set.csv"
-
     training_df = load_csv(training_set_filename)
-    test_df = load_csv(test_set_filename)
-
     training_df_without_class_attr = get_df_without_class_attr(training_df)
-    test_df_without_class_attr = get_df_without_class_attr(test_df)
 
     # Нормовані значення ознак
     m_x_for_training_set = get_M_x_for_all_x(training_df_without_class_attr)
@@ -180,6 +183,8 @@ def main():
     print("Результати класифікації для навчальної вибірки:")
     print()
     print_stats(training_set_classification_stats)
+    print()
+    print_stats_probabilities(training_set_classification_stats)
 
 
 if __name__ == '__main__':

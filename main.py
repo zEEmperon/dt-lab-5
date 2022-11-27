@@ -47,6 +47,10 @@ def get_D_x_for_all_x(df: pd.DataFrame, m_x: dict) -> dict:
     return dictionary
 
 
+def get_normed_x(df: pd.DataFrame, d_x: dict) -> pd.DataFrame:
+    return df / d_x.values()
+
+
 def get_beta_coefs(df: pd.DataFrame) -> np.array:
     df_K1 = get_K1(df)
     df_K2 = get_K2(df)
@@ -82,7 +86,11 @@ def main():
     test_df_without_class_attr = get_df_without_class_attr(test_df)
 
     beta_coefs = get_beta_coefs(training_df)
-    print(beta_coefs)
+
+    # Нормовані значення ознак
+    m_x_for_training_set = get_M_x_for_all_x(training_df_without_class_attr)
+    d_x_for_training_set = get_D_x_for_all_x(training_df_without_class_attr, m_x_for_training_set)
+    normed_x_training_set = get_normed_x(training_df_without_class_attr, d_x_for_training_set)
 
 
 if __name__ == '__main__':
